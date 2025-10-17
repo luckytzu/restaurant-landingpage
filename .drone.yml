@@ -1,13 +1,19 @@
-kind: pipeline
-name: aws_deployment_pipeline
+hugo_env: &hugo_env
+  BASE_URL: adresse-site-statique-s3
 
-platform:
-  os: linux
-  arch: amd64
+kind: pipeline
+name: hugo-s3-deploy
 
 steps:
-  - name: deploy_to_s3
-    image: plugins/s3
+  - name: hugo-build
+    image: peaceiris/hugo:v0.65.3-mod
+    environment:
+      <<: *hugo_env
+    commands:
+      - hugo --baseURL $BASE_URL
+
+  - name: deploy-to-s3
+    image: amazon/aws-cli:2.31.17
     environment:
       AWS_ACCESS_KEY_ID:
         from_secret: aws_access_key_id
@@ -19,18 +25,9 @@ steps:
         from_secret: s3_region
       BUCKET:
         from_secret: s3_bucket_name
-    settings:
-      bucket: ${BUCKET}
-      region: ${AWS_DEFAULT_REGION}
-      access_key: ${AWS_ACCESS_KEY_ID}
-      secret_key: ${AWS_SECRET_ACCESS_KEY}
-      source: ./dist
-      target: /
-      acl: public-read
-      delete: true
+    commands:
+      - aws s3 cp public/ s3://$BUCKET/ --recursive --acl public-read
 
-trigger:
-  branch:
-    - master
-  event:
-    - push
+    when:
+      event: push
+      branch: master
