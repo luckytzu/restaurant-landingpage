@@ -10,7 +10,7 @@ steps:
     environment:
       <<: *hugo_env
     commands:
-      - hugo --baseURL $BASE_URL 
+      - hugo --baseURL "https://bucketawss38.s3.us-east-1.amazonaws.com/"
 
   - name: deploy-to-s3
     image: amazon/aws-cli:2.31.17
