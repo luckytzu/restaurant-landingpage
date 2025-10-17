@@ -24,7 +24,7 @@ steps:
       - aws s3 sync ./dist s3://$BUCKET --delete --exact-timestamps
       - echo "Deployment completed."
       
-trigger:
+trigger: 
   branch:
     - main
   event:
