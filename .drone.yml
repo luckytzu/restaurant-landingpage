@@ -9,22 +9,27 @@ steps:
   - name: deploy_to_s3
     image: plugins/s3
     environment:
-      AWS_ACCESS_KEY_ID: 
+      AWS_ACCESS_KEY_ID:
         from_secret: aws_access_key_id
-      AWS_SECRET_ACCESS_KEY: 
+      AWS_SECRET_ACCESS_KEY:
         from_secret: aws_secret_access_key
       AWS_SESSION_TOKEN:
         from_secret: aws_session_token
       AWS_DEFAULT_REGION:
         from_secret: s3_region
-      BUCKET: 
+      BUCKET:
         from_secret: s3_bucket_name
-    commands:
-      - echo "Deploying site to S3..."
-      - aws s3 sync ./dist s3://$BUCKET --delete --exact-timestamps
-      - echo "Deployment completed."
-      
-trigger: 
+    settings:
+      bucket: ${BUCKET}
+      region: ${AWS_DEFAULT_REGION}
+      access_key: ${AWS_ACCESS_KEY_ID}
+      secret_key: ${AWS_SECRET_ACCESS_KEY}
+      source: ./dist
+      target: /
+      acl: public-read
+      delete: true
+
+trigger:
   branch:
     - master
   event:
