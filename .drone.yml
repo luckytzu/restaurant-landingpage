@@ -6,34 +6,30 @@ platform:
   os: linux
   arch: amd64
 
+# Correct structure for your .drone.yml step
 steps:
-  - name: deploy_to_s3
-    # L'image officielle d'AWS CLI est recommandée pour les tâches AWS.
-    # Si vous devez aussi faire de la compilation, choisissez une image adaptée (ex: node, python, golang, etc.)
-    image: amazon/aws-cli:latest 
+  - name: my_aws_step
+    image: plugins.drone.io
     commands:
-      # Les variables d'environnement sont maintenant disponibles.
-      - echo "Configuration AWS réussie."
-      - echo "Région S3: $AWS_DEFAULT_REGION"
-      - echo "Bucket cible: $BUCKET"
-      
-      # Exemple d'utilisation de l'AWS CLI pour synchroniser un répertoire local (ex: 'dist') vers S3
-      # - aws s3 sync ./dist s3://$BUCKET --region $AWS_DEFAULT_REGION
-      
-      # Exemple de vérification du bucket (vous devriez voir les fichiers s'ils existent)
-      - aws s3 ls s3://$BUCKET --region $AWS_DEFAULT_REGION
-
-    # Définition des variables d'environnement injectées depuis les secrets de Drone
+      - echo "Running deployment..."
+    
+    # Correct structure starts here
     environment:
-      AWS_ACCESS_KEY_ID:
+      # AWS_ACCESS_KEY_ID is the key. 
+      # Its value is a map (the indented block below it).
+      AWS_ACCESS_KEY_ID: 
         from_secret: aws_access_key_id
-      AWS_SECRET_ACCESS_KEY:
+      
+      # AWS_SECRET_ACCESS_KEY is the key. 
+      # Its value is a map (the indented block below it).
+      AWS_SECRET_ACCESS_KEY: 
         from_secret: aws_secret_access_key
+      
       AWS_SESSION_TOKEN:
-        from_secret: aws_session_token 
+        from_secret: aws_session_token
       AWS_DEFAULT_REGION:
         from_secret: s3_region
-      BUCKET:
+      BUCKET: 
         from_secret: s3_bucket_name
 
 # Déclenchement typique pour les push sur la branche 'main'
