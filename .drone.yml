@@ -1,72 +1,44 @@
-hugo_env: &hugo_env
-  BASE_URL: https://monsite.fr/ 
-
 kind: pipeline
-name: hugo-website-to-s3
+name: aws_deployment_pipeline
+
+# Assure que le pipeline s'exécutera sur une architecture compatible Linux/x86_64
+platform:
+  os: linux
+  arch: amd64
 
 steps:
-  # 1. Étape de construction du site avec Hugo.
-  # Les fichiers statiques seront générés dans le dossier 'public/'.
-  - name: hugo-build
-    image: peaceiris/hugo:v0.65.3-mod
-    environment:
-      <<: *hugo_env # <-- J'ai rajouté cette ligne pour définir $BASE_URL
+  - name: deploy_to_s3
+    # L'image officielle d'AWS CLI est recommandée pour les tâches AWS.
+    # Si vous devez aussi faire de la compilation, choisissez une image adaptée (ex: node, python, golang, etc.)
+    image: amazon/aws-cli:latest 
     commands:
-      # Utilise le répertoire 'public/' par défaut pour la sortie
-      - hugo --baseURL $BASE_URL
+      # Les variables d'environnement sont maintenant disponibles.
+      - echo "Configuration AWS réussie."
+      - echo "Région S3: $AWS_DEFAULT_REGION"
+      - echo "Bucket cible: $BUCKET"
+      
+      # Exemple d'utilisation de l'AWS CLI pour synchroniser un répertoire local (ex: 'dist') vers S3
+      # - aws s3 sync ./dist s3://$BUCKET --region $AWS_DEFAULT_REGION
+      
+      # Exemple de vérification du bucket (vous devriez voir les fichiers s'ils existent)
+      - aws s3 ls s3://$BUCKET --region $AWS_DEFAULT_REGION
 
-  # 2. Étape de déploiement sur AWS S3.
-  - name: upload-to-s3
-    image: plugins/s3
-    settings:
-      # --- PARAMÈTRES S3 À PERSONNALISER ---
-      
-      # [OBLIGATOIRE] Nom de votre bucket S3 (Ex: mon-site-hugo-prod)
-      bucket: s3_bucket_name
-      
-      # [OBLIGATOIRE] Région AWS de votre bucket (Ex: eu-west-3, us-east-1)
-      region: us-east-1
-      
-      # [OBLIGATOIRE] Source : Les fichiers statiques générés par Hugo
-      source: public/**/*
-      
-      # Cible : Uploader à la racine du bucket
-      target: /
-      
-      # ACL : Permettre l'accès public pour l'hébergement web statique
-      acl: public-read
-      
-      # Retire le préfixe 'public/' du chemin lors de l'upload
-      strip_prefix: public/
-      
-      # --- SECRETS À DÉFINIR DANS DRONE ---
-    secrets:
-      access_key: aws_access_key_id
-      secret_key: aws_secret_access_key
-      secret_key: aws_secret_session_token
-      
-    when:
-      event: push
-      branch:
-        - master
-
-  # 3. Étape d'affichage des URLs (Optionnel, ajusté pour S3)
-  - name: display_urls
-    image: lowess/drone-tabulate
+    # Définition des variables d'environnement injectées depuis les secrets de Drone
     environment:
-      <<: *hugo_env # <-- J'ai rajouté cette ligne pour que $BASE_URL soit accessible
-    settings:
-      headers:
-        - Type
-        - URL
-      rows:
-        -
-          - "S3 Endpoint"
-          - http://bucketawss38.s3-ec2-54-90-192-5.compute-1.us-east-1.amazonaws.com/
-        -
-          - "Custom Domain"
-          - $BASE_URL 
-    when:
-      event: push
-      branch:
-        - master
+      AWS_ACCESS_KEY_ID:
+        from_secret: aws_access_key_id
+      AWS_SECRET_ACCESS_KEY:
+        from_secret: aws_secret_access_key
+      AWS_SESSION_TOKEN:
+        from_secret: aws_session_token 
+      AWS_DEFAULT_REGION:
+        from_secret: s3_region
+      BUCKET:
+        from_secret: s3_bucket_name
+
+# Déclenchement typique pour les push sur la branche 'main'
+trigger:
+  branch:
+    - main
+  event:
+    - push
