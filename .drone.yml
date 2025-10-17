@@ -40,6 +40,7 @@ steps:
   # Étape 3 : Affichage des URLs (ADAPTATION)
   - name: display_urls
     image: lowess/drone-tabulate
+    source: public/
     environment:
       # Assurez-vous que cette URL pointe vers votre endpoint S3
       S3_WEBSITE_URL: https://ec2-107-20-91-130.compute-1.amazonaws.com/ 
