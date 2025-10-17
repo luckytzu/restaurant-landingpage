@@ -26,7 +26,7 @@ steps:
       BUCKET:
         from_secret: s3_bucket_name
     commands:
-      - aws s3 cp public/ s3://$BUCKET/ --recursive --acl public-read
+      - aws s3 cp public/ s3://$BUCKET/ --recursive
 
     when:
       event: push
