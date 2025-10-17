@@ -1,57 +1,71 @@
 hugo_env: &hugo_env
-  BASE_URL: https://ec2-107-20-91-130.compute-1.amazonaws.com/ 
+  BASE_URL: https://monsite.fr/ 
 
 kind: pipeline
-name: hugo-website-aws
+name: hugo-website-to-s3
 
 steps:
-  # Étape 1 : Construction du site (AUCUN CHANGEMENT NÉCESSAIRE)
+  # 1. Étape de construction du site avec Hugo.
+  # Les fichiers statiques seront générés dans le dossier 'public/'.
   - name: hugo-build
     image: peaceiris/hugo:v0.65.3-mod
     environment:
-      <<: *hugo_env
+      <<: *hugo_env # <-- J'ai rajouté cette ligne pour définir $BASE_URL
     commands:
-      # Hugo compile le site dans le dossier 'public'
-      - hugo --baseURL $BASE_URL 
+      # Utilise le répertoire 'public/' par défaut pour la sortie
+      - hugo --baseURL $BASE_URL
 
-  # Étape 2 : DÉPLOIEMENT VERS S3 (Remplacement de 'publish-website') 🚀
-  - name: deploy-to-s3
-    image: plugins/s3:latest # Utilisation du plugin S3
+  # 2. Étape de déploiement sur AWS S3.
+  - name: upload-to-s3
+    image: plugins/s3
     settings:
-      # Configuration du Bucket
-      bucket: ec2-107-20-91-130.compute-1.amazonaws.com
-      region: us-east-1
-      source: public/                  
-      target: /
-      acl: public-read               
+      # --- PARAMÈTRES S3 À PERSONNALISER ---
       
-      # Authentification AWS (récupération des secrets configurés sur le Drone Server)
-      access_key:
-        from_secret: aws_access_key_id
-      secret_key:
-        from_secret: aws_secret_access_key
-      session_token:
-        from_secret: aws_session_token 
-        
+      # [OBLIGATOIRE] Nom de votre bucket S3 (Ex: mon-site-hugo-prod)
+      bucket: bucketawss38
+      
+      # [OBLIGATOIRE] Région AWS de votre bucket (Ex: eu-west-3, us-east-1)
+      region: us-east-1
+      
+      # [OBLIGATOIRE] Source : Les fichiers statiques générés par Hugo
+      source: public/**/*
+      
+      # Cible : Uploader à la racine du bucket
+      target: /
+      
+      # ACL : Permettre l'accès public pour l'hébergement web statique
+      acl: public-read
+      
+      # Retire le préfixe 'public/' du chemin lors de l'upload
+      strip_prefix: public/
+      
+      # --- SECRETS À DÉFINIR DANS DRONE ---
+    secrets:
+      access_key: aws_access_key_id
+      secret_key: aws_secret_access_key
+      
     when:
       event: push
-      branch: master
+      branch:
+        - master
 
-  # Étape 3 : Affichage des URLs (ADAPTATION)
+  # 3. Étape d'affichage des URLs (Optionnel, ajusté pour S3)
   - name: display_urls
     image: lowess/drone-tabulate
-    source: public/
     environment:
-      # Assurez-vous que cette URL pointe vers votre endpoint S3
-      S3_WEBSITE_URL: https://ec2-107-20-91-130.compute-1.amazonaws.com/ 
+      <<: *hugo_env # <-- J'ai rajouté cette ligne pour que $BASE_URL soit accessible
     settings:
       headers:
-        - Type de Lien
-        - URL du Site
+        - Type
+        - URL
       rows:
         -
-          - "Endpoint S3"
-          - $S3_WEBSITE_URL
+          - "S3 Endpoint"
+          - http://bucketawss38.s3-ec2-54-90-192-5.compute-1.us-east-1.amazonaws.com/
+        -
+          - "Custom Domain"
+          - $BASE_URL 
     when:
       event: push
-      branch: master
+      branch:
+        - master
