@@ -8,21 +8,22 @@ platform:
 steps:
   - name: deploy_to_s3
     image: plugins/s3
-    settings:
-      bucket:
-        from_secret: s3_bucket_name
-      region:
-        from_secret: s3_region
-      access_key:
+    environment:
+      AWS_ACCESS_KEY_ID: 
         from_secret: aws_access_key_id
-      secret_key:
+      AWS_SECRET_ACCESS_KEY: 
         from_secret: aws_secret_access_key
-      source: ./dist           # dossier local à déployer
-      target: /                # chemin dans le bucket
-      acl: public-read         # pour rendre le site accessible publiquement
-      delete: true             # supprime les fichiers qui ne sont plus présents localement
-
-# Déclenchement typique pour les push sur la branche 'main'
+      AWS_SESSION_TOKEN:
+        from_secret: aws_session_token
+      AWS_DEFAULT_REGION:
+        from_secret: s3_region
+      BUCKET: 
+        from_secret: s3_bucket_name
+    commands:
+      - echo "Deploying site to S3..."
+      - aws s3 sync ./dist s3://$BUCKET --delete --exact-timestamps
+      - echo "Deployment completed."
+      
 trigger:
   branch:
     - main
