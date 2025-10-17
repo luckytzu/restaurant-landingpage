@@ -22,7 +22,7 @@ steps:
       # --- PARAMÈTRES S3 À PERSONNALISER ---
       
       # [OBLIGATOIRE] Nom de votre bucket S3 (Ex: mon-site-hugo-prod)
-      bucket: bucketawss38
+      bucket: s3_bucket_name
       
       # [OBLIGATOIRE] Région AWS de votre bucket (Ex: eu-west-3, us-east-1)
       region: us-east-1
@@ -43,6 +43,7 @@ steps:
     secrets:
       access_key: aws_access_key_id
       secret_key: aws_secret_access_key
+      secret_key: aws_secret_session_token
       
     when:
       event: push
